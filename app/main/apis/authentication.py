@@ -7,9 +7,11 @@ from app.utils.send_mail import send_reset_password_email
 from app.utils.login_mail import send_login_notification_email
 from app.utils.error_response import error_response
 from app.utils.success_response import success_response
-
+from twilio.rest import Client
+from app.utils.otp import send_otp
 import base64
 
+client = Client(current_app.config['TWILIO_ACCOUNT_SID'], current_app.config['TWILIO_AUTH_TOKEN'])
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
@@ -33,7 +35,7 @@ def register():
 
         db.session.add(new_user)
         db.session.commit()
-
+        
         return success_response(201, 'success', "User registered successfully")
     else:
         return jsonify(validation_result), validation_result["status"]
@@ -96,6 +98,30 @@ def deactivate_account(token):
         return success_response(200, 'success', 'Account deactivated successfully')
     else:
         return error_response(404, 'User not found')
+    
+
+@auth_bp.route('/activate_account/', methods=['GET'])
+def activate_account():
+   data = request.json
+   email = data.get('email')
+   otp = data.get('otp')
+
+   user = User.query.filter_by(email=email).first()
+   if user.is_active == False:
+        otp = send_otp(data.get('email'))
+        user.activation_otp = otp
+        db.session.commit()
+        return success_response(201, 'success', "OTP sent for activation")
+   if user:
+       if user.activation_otp == otp:
+           user.is_active = True
+           db.session.commit()
+           return success_response(200, "success", "user account activated successfully")
+       return error_response(401, "Invalid otp.")
+   return error_response(404, "User not found")
+       
+
+
 
 @auth_bp.route('/forgot_password', methods=['POST'])
 def forgot_password():
