@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv, dotenv_values
 load_dotenv()
+
 class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SECRET_KEY =  os.getenv('SECRET_KEY')
@@ -17,3 +18,7 @@ class Config:
     TEMP_PATH = os.getenv('TEMP_PATH')
     CHANGE_PASS = os.getenv('CHANGE_PASS')
     DEACTIVATE_ACC = os.getenv('DEACTIVATE_ACC')
+    TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
+    TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
+    
+    
