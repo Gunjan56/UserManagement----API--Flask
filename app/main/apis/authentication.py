@@ -7,11 +7,10 @@ from app.utils.send_mail import send_reset_password_email
 from app.utils.login_mail import send_login_notification_email
 from app.utils.error_response import error_response
 from app.utils.success_response import success_response
-from twilio.rest import Client
-from app.utils.otp import send_otp
+from app.utils.otp import send_otp_sms
 import base64
+import random
 
-client = Client(current_app.config['TWILIO_ACCOUNT_SID'], current_app.config['TWILIO_AUTH_TOKEN'])
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
@@ -19,7 +18,7 @@ def register():
     data = request.json
     validation_result = Validators.check_user_required_fields(data)
     if validation_result["status"] == 200:
-        user = User.query.filter_by(username=data.get('username'), email=data.get('email')).first()
+        user = User.query.filter_by(username=data.get('username'), email=data.get('email'), phone_number=data.get('phone_number')).first()
 
         if user:
             return error_response(400,"User already registered")
@@ -30,6 +29,7 @@ def register():
             username=data.get('username'),
             email=data.get('email'),
             password=hashed_password,
+            phone_number=data.get('phone_number'),
             profile_picture=data.get('profile_picture')
         )
 
@@ -100,28 +100,43 @@ def deactivate_account(token):
         return error_response(404, 'User not found')
     
 
-@auth_bp.route('/activate_account/', methods=['GET'])
+@auth_bp.route('/activate_account', methods=['POST'])
 def activate_account():
-   data = request.json
-   email = data.get('email')
-   otp = data.get('otp')
+    data = request.json
+    phone_number = data.get('phone_number')
+    otp_entered = data.get('activation_otp')
 
-   user = User.query.filter_by(email=email).first()
-   if user.is_active == False:
-        otp = send_otp(data.get('email'))
+    user = User.query.filter_by(phone_number=phone_number).first()
+
+    if user:
+        if user.notification_sent == 1:
+            if user.activation_otp == otp_entered:
+                user.is_active = True
+                user.notification_sent = 0
+                db.session.commit()
+                return success_response(200, 'success', 'Account activated successfully')
+            else:
+                return error_response(401, 'Invalid OTP. Please try again.')
+        else:
+            return error_response(401, 'Please request OTP first.')
+    else:
+        return error_response(404, 'User not found')
+
+@auth_bp.route('/send_otp', methods=['POST'])
+def send_otp():
+    data = request.json
+    phone_number = data.get('phone_number')
+
+    user = User.query.filter_by(phone_number=phone_number).first()
+
+    if user:
+        otp = ''.join(random.choices('0123456789', k=6))
+        send_otp_sms(phone_number, otp)
         user.activation_otp = otp
         db.session.commit()
-        return success_response(201, 'success', "OTP sent for activation")
-   if user:
-       if user.activation_otp == otp:
-           user.is_active = True
-           db.session.commit()
-           return success_response(200, "success", "user account activated successfully")
-       return error_response(401, "Invalid otp.")
-   return error_response(404, "User not found")
-       
-
-
+        return success_response(200, 'success', 'OTP sent for account activation')
+    else:
+        return error_response(404, 'User not found')
 
 @auth_bp.route('/forgot_password', methods=['POST'])
 def forgot_password():

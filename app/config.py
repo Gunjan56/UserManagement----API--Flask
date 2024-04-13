@@ -20,5 +20,6 @@ class Config:
     DEACTIVATE_ACC = os.getenv('DEACTIVATE_ACC')
     TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
     TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
+    TWILIO_PHONE_NUMBER = os.getenv['TWILIO_PHONE_NUMBER']
     
     
