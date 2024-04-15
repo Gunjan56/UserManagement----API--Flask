@@ -20,6 +20,7 @@ def create_app():
     jwt.init_app(app)
     socketio.init_app(app)
     mail.init_app(app)
+    
 
     with app.app_context():  
         from app.main.apis.authentication import auth_bp

@@ -19,6 +19,3 @@ class Config:
     CHANGE_PASS = os.getenv('CHANGE_PASS')
     DEACTIVATE_ACC = os.getenv('DEACTIVATE_ACC')
     TWILIO_ACCOUNT_SID = os.environ['TWILIO_ACCOUNT_SID']
-    TWILIO_AUTH_TOKEN = os.environ['TWILIO_AUTH_TOKEN']
-    
-    

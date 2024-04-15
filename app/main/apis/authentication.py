@@ -8,6 +8,7 @@ from app.utils.login_mail import send_login_notification_email
 from app.utils.error_response import error_response
 from app.utils.success_response import success_response
 from app.utils.otp import send_otp_sms
+from app.utils.pagination import pagination
 import base64
 import random
 
@@ -180,31 +181,10 @@ def reset_password(token):
 
     return success_response(200, 'success','Password reset successfully')
 
+
 @auth_bp.route('/get_users/', methods=['GET'])
 def get_users():
-    page = request.args.get("page", 1, type=int)
-    per_page = request.args.get("per-page", 5, type=int)
-    users = User.query.paginate(page=page, per_page=per_page, error_out=False)
-    all_users = []
-
-    if not users.items:
-        return error_response(401, "No more users available")
-
-    for user in users.items:
-        all_users.append({
-            "username": user.username,
-            "email": user.email,
-            "phone_number": user.phone_number,
-            "profile_picture": user.profile_picture,
-        })
-
-    results = {
-        "pagination": {
-            "total_users": users.total,
-            "page": page,
-            "per_page": per_page,
-            "total_pages": users.pages,
-        },
-    }
-
-    return jsonify(all_users, results)
+    users = User.query.all()
+    data = [{"username": user.username, "email": user.email, "profile_picture": user.profile_picture, "phone_number": user.phone_number} for user in users]
+    paginated_data = pagination(data, 10, 1)
+    return paginated_data
