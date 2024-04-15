@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, jwt_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.model.model import db, User
 from app.main.validators.validators import Validators
@@ -179,3 +179,32 @@ def reset_password(token):
     db.session.commit()
 
     return success_response(200, 'success','Password reset successfully')
+
+@auth_bp.route('/get_users/', methods=['GET'])
+def get_users():
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per-page", 5, type=int)
+    users = User.query.paginate(page=page, per_page=per_page, error_out=False)
+    all_users = []
+
+    if not users.items:
+        return error_response(401, "No more users available")
+
+    for user in users.items:
+        all_users.append({
+            "username": user.username,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "profile_picture": user.profile_picture,
+        })
+
+    results = {
+        "pagination": {
+            "total_users": users.total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": users.pages,
+        },
+    }
+
+    return jsonify(all_users, results)
